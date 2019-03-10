@@ -18,7 +18,7 @@ def gravar_arquivo(nome, conteudo, bin = False):
     arquivo.close()
 
 def parse_m3u(data):
-    regex_resolucao = re.compile(r"[0-9]+p[0-9]+")
+    regex_resolucao = re.compile(r"([0-9]+p[0-9]|chunked)+")
     linhas = data.split("\n")
     i = 0
     retorno = {}
@@ -27,7 +27,10 @@ def parse_m3u(data):
             dados = linhas[i].split(',')
             resolucao = dados[len(dados)-1][7:-1]
             if(regex_resolucao.match(resolucao)):
-                retorno[resolucao] = linhas[i+1]
+                if(resolucao == 'chunked'):
+                    retorno['source'] = linhas[i+1]
+                else:
+                    retorno[resolucao] = linhas[i+1]
         i += 1
     return retorno
 
