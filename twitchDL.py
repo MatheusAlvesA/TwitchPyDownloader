@@ -99,34 +99,31 @@ print(str(len(partes)) + ' partes.')
 # INICIANDO DOWNLOAD
 print("\nINICIANDO DOWNLOAD\n")
 
-if not os.path.isdir('tmp'):
-    os.mkdir('tmp')
+if not os.path.isdir(TMP_DIR):
+    os.mkdir(TMP_DIR)
 
 i = 0
 while i < len(partes):
     print('{:.2f}'.format((i/len(partes))*100)+'% Concluido.', end="\r")
     r = requests.get(partes[i])
-    gravar_arquivo(os.path.join(os.getcwd(),"tmp", str(i)+'.ts'), r.content, True)
+    gravar_arquivo(os.path.join(os.getcwd(),TMP_DIR, str(i)+'.ts'), r.content, True)
     i += 1
 print('{:.2f}'.format(100)+'% Concluido.', end="\n")
 
 # INICIANDO PROCESSAMENTO
 print("\nJUNTANDO PARTES\n")
 
-completo = open(vod_id+'.ts', "wb+")
-lista_arquivos = os.listdir('tmp')
+lista_em_texto = open('lista_partes.tmp', "w+")
+lista_arquivos = os.listdir(TMP_DIR)
+lista_arquivos.sort(key=lambda x: int(x.split('.')[0]))
 for arquivo in lista_arquivos:
-    with open(os.path.join(os.getcwd(),"tmp", arquivo), 'rb') as parte:
-        completo.write(parte.read())
-completo.close()
+    lista_em_texto.write("file '"+ os.path.join(TMP_DIR, arquivo) +"'\n")
+lista_em_texto.close()
+
+subprocess.run(["ffmpeg_x64.exe", "-f", "concat", "-safe", "0", "-i", "lista_partes.tmp", "-c", "copy", "%s.mp4" % 'vod_id'], shell=True, capture_output=True)
 
 shutil.rmtree(os.path.join(os.getcwd(),"tmp"), ignore_errors=True)
 
-# CONVERTENDO VIDEO FINAL DE .TS PARA .MP4
-print("\nCONVERTENDO VÍDEO...\n")
-
-subprocess.run(["ffmpeg_x64.exe", "-y", "-i", "%s.ts" % vod_id, "-c:v", "copy", "-c:a", "copy", "%s.mp4" % vod_id], shell=True, capture_output=True)
-
-os.remove("%s.ts" % vod_id)
+os.remove("lista_partes.tmp")
 
 print("\n> CONCLUÍDO <\n")
