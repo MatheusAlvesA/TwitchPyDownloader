@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-import requests, re
+import requests, re, os, shutil, subprocess
 
 # CONSTANTES
 URL_SRC_PARTS = "https://usher.ttvnw.net/vod/%s.m3u8?nauthsig=%s&nauth=%s&allow_source=true&player=twitchweb&allow_spectre=true&allow_audio_only=true"
 URL_GET_TOKEN= "https://api.twitch.tv/api/vods/%s/access_token"
-client_ID = "jzkbprff40iqj646a697cyrvl0zt2m6"
+CLIENT_ID = "jzkbprff40iqj646a697cyrvl0zt2m6"
+TMP_DIR = 'tmp'
 
 # FUNÇÕES
 def gravar_arquivo(nome, conteudo, bin = False):
@@ -50,7 +51,7 @@ print("\nOBTENDO TOKEN DE AUTORIZAÇÃO\n")
 
 parsed_URL_Token = URL_GET_TOKEN % vod_id
 
-r = requests.get(parsed_URL_Token, headers={"Client-ID": client_ID})
+r = requests.get(parsed_URL_Token, headers={"Client-ID": CLIENT_ID})
 
 if(r.status_code != requests.codes.ok):
     print("Falha ao obter o token de autorização")
@@ -63,7 +64,7 @@ print("BUSCANDO INFORMAÇÕES DO VOD\n")
 
 parsed_URL_Lista = URL_SRC_PARTS % (vod_id, auth['sig'], auth['token'])
 
-r = requests.get(parsed_URL_Lista, headers={"Client-ID": client_ID})
+r = requests.get(parsed_URL_Lista, headers={"Client-ID": CLIENT_ID})
 
 lista_resolucoes = parse_m3u(r.text)
 
@@ -98,14 +99,34 @@ print(str(len(partes)) + ' partes.')
 # INICIANDO DOWNLOAD
 print("\nINICIANDO DOWNLOAD\n")
 
+if not os.path.isdir('tmp'):
+    os.mkdir('tmp')
+
 i = 0
 while i < len(partes):
     print('{:.2f}'.format((i/len(partes))*100)+'% Concluido.', end="\r")
     r = requests.get(partes[i])
-    gravar_arquivo(str(i)+'.ts', r.content, True)
+    gravar_arquivo(os.path.join(os.getcwd(),"tmp", str(i)+'.ts'), r.content, True)
     i += 1
+print('{:.2f}'.format(100)+'% Concluido.', end="\n")
 
 # INICIANDO PROCESSAMENTO
-print("\nPROCESSANDO VÍDEO\n")
+print("\nJUNTANDO PARTES\n")
 
-#TODO
+completo = open(vod_id+'.ts', "wb+")
+lista_arquivos = os.listdir('tmp')
+for arquivo in lista_arquivos:
+    with open(os.path.join(os.getcwd(),"tmp", arquivo), 'rb') as parte:
+        completo.write(parte.read())
+completo.close()
+
+shutil.rmtree(os.path.join(os.getcwd(),"tmp"), ignore_errors=True)
+
+# CONVERTENDO VIDEO FINAL DE .TS PARA .MP4
+print("\nCONVERTENDO VÍDEO...\n")
+
+subprocess.run(["ffmpeg_x64.exe", "-y", "-i", "%s.ts" % vod_id, "-c:v", "copy", "-c:a", "copy", "%s.mp4" % vod_id], shell=True, capture_output=True)
+
+os.remove("%s.ts" % vod_id)
+
+print("\n> CONCLUÍDO <\n")
