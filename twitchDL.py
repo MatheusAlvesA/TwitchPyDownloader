@@ -120,7 +120,7 @@ for arquivo in lista_arquivos:
     lista_em_texto.write("file '"+ os.path.join(TMP_DIR, arquivo) +"'\n")
 lista_em_texto.close()
 
-subprocess.run(["ffmpeg_x64.exe", "-f", "concat", "-safe", "0", "-i", "lista_partes.tmp", "-c", "copy", "%s.mp4" % 'vod_id'], shell=True, capture_output=True)
+subprocess.run(["ffmpeg_x64.exe", "-f", "concat", "-safe", "0", "-i", "lista_partes.tmp", "-c", "copy", "%s.mp4" % vod_id], shell=True, capture_output=True)
 
 shutil.rmtree(os.path.join(os.getcwd(),"tmp"), ignore_errors=True)
 
